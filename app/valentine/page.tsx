@@ -6,6 +6,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import confetti from "canvas-confetti";
 import { Great_Vibes } from "next/font/google";
+import Image from "next/image"; // Using Next.js Image component is better for local files
 
 // Romantic Font
 const greatVibes = Great_Vibes({ 
@@ -29,7 +30,7 @@ export default function Valentine() {
 
   useEffect(() => {
     // Initialize Audio
-    bgMusicRef.current = new Audio("https://www.bensound.com/bensound-music/bensound-love.mp3"); // Royalty free romantic music
+    bgMusicRef.current = new Audio("https://www.bensound.com/bensound-music/bensound-love.mp3"); 
     bgMusicRef.current.loop = true;
     bgMusicRef.current.volume = 0.4;
 
@@ -64,19 +65,19 @@ export default function Valentine() {
 
   // Sound Effects
   const playSwoosh = () => {
-    const audio = new Audio("https://www.soundjay.com/button/sounds/button-10.mp3"); // Simple swoosh/click
+    const audio = new Audio("https://www.soundjay.com/button/sounds/button-10.mp3"); 
     audio.volume = 0.5;
     audio.play().catch(e => console.log(e));
   };
 
   const playSuccess = () => {
-    const audio = new Audio("https://www.soundjay.com/human/sounds/applause-01.mp3"); // Cheering
+    const audio = new Audio("https://www.soundjay.com/human/sounds/applause-01.mp3"); 
     audio.volume = 0.6;
     audio.play().catch(e => console.log(e));
   };
 
   const moveButton = () => {
-    playSwoosh(); // Play sound when moving
+    playSwoosh(); 
     setNoCount((prev) => prev + 1);
     setYesButtonSize((prev) => prev + 0.15); 
 
@@ -96,7 +97,7 @@ export default function Valentine() {
   const handleYesClick = async () => {
     if (!user) return;
     
-    playSuccess(); // Play success sound
+    playSuccess(); 
 
     confetti({
       particleCount: 150,
@@ -125,11 +126,16 @@ export default function Valentine() {
         <h1 className={`${greatVibes.className} text-6xl md:text-8xl text-red-600 mb-4 animate-bounce`}>
           Yay! Thank you! ❤️
         </h1>
-        <img 
-          src="https://media.giphy.com/media/26BRv0ThflsHCqDrG/giphy.gif" 
-          alt="Happy Bears"
-          className="rounded-xl shadow-2xl border-4 border-white w-64 md:w-96 my-6"
-        />
+        
+        {/* AFTER YES IMAGE */}
+        <div className="relative w-64 h-64 md:w-96 md:h-96 my-6 rounded-xl shadow-2xl border-4 border-white overflow-hidden">
+             <img 
+               src="/src/Prince1.jpg" 
+               alt="After Yes"
+               className="w-full h-full object-cover"
+             />
+        </div>
+
         <p className="text-2xl text-pink-800 font-serif">
           I knew you would say yes! (Eventually 😉)
         </p>
@@ -140,7 +146,7 @@ export default function Valentine() {
   return (
     <div className="relative flex flex-col items-center justify-center min-h-screen bg-gradient-to-t from-pink-200 via-pink-100 to-white overflow-hidden">
       
-      {/* Music Toggle Button (Top Right) */}
+      {/* Music Toggle Button */}
       <button 
         onClick={toggleMusic}
         className="absolute top-4 right-4 z-50 bg-white/50 backdrop-blur-sm p-3 rounded-full shadow-md hover:bg-white transition"
@@ -157,11 +163,16 @@ export default function Valentine() {
 
       <div className="z-10 text-center px-4">
         <div className="mb-6 flex justify-center">
-          <img 
-            src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbnJscWQ1YnNscGZ4bHExaXJ1bTRlZWF2dzc5bXJ6cWh0bGd0anA2ZCZlcD12MV9zdGlja2Vyc19zZWFyY2gmY3Q9cw/cLS1cfxvGOPVpf9g3y/giphy.gif" 
-            alt="Cute Valentine Bear"
-            className="w-56 h-56 object-contain drop-shadow-xl"
-          />
+          
+          {/* BEFORE YES IMAGE (Question Phase) */}
+          <div className="w-56 h-56 md:w-72 md:h-72 relative rounded-lg overflow-hidden shadow-xl border-4 border-pink-200">
+             <img 
+                src="/src/Prince2.jpg" 
+                alt="Prince Asking"
+                className="w-full h-full object-cover"
+             />
+          </div>
+          
         </div>
 
         <h1 className={`${greatVibes.className} text-5xl md:text-7xl text-red-500 mb-12 drop-shadow-sm`}>
