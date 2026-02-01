@@ -1,54 +1,112 @@
-// app/valentine/page.tsx
 "use client";
-import { useState, useEffect } from "react";
-import { auth, db } from "@/firebase";
+import { useState, useEffect, useRef } from "react";
+import { auth, db } from "@/firebase"; 
 import { doc, updateDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "next/navigation";
+import confetti from "canvas-confetti";
+import { Great_Vibes } from "next/font/google";
+
+// Romantic Font
+const greatVibes = Great_Vibes({ 
+  subsets: ["latin"], 
+  weight: "400" 
+});
 
 export default function Valentine() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [noCount, setNoCount] = useState(0);
   const [yesClicked, setYesClicked] = useState(false);
+  const [yesButtonSize, setYesButtonSize] = useState(1);
+  const [isMusicPlaying, setIsMusicPlaying] = useState(false);
+  
+  // Audio Refs
+  const bgMusicRef = useRef<HTMLAudioElement | null>(null);
   
   // State for the "No" button position
   const [noPosition, setNoPosition] = useState({ top: "auto", left: "auto", position: "static" });
 
   useEffect(() => {
-    // Check if user is logged in
+    // Initialize Audio
+    bgMusicRef.current = new Audio("https://www.bensound.com/bensound-music/bensound-love.mp3"); // Royalty free romantic music
+    bgMusicRef.current.loop = true;
+    bgMusicRef.current.volume = 0.4;
+
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (!currentUser) {
-        router.push("/"); // Redirect to login if not authenticated
+        router.push("/");
       } else {
         setUser(currentUser);
       }
     });
-    return () => unsubscribe();
+    
+    // Cleanup audio on unmount
+    return () => {
+      unsubscribe();
+      if (bgMusicRef.current) {
+        bgMusicRef.current.pause();
+      }
+    };
   }, [router]);
 
-  // Logic to move the "No" button
-  const moveButton = () => {
-    // Increment local counter for tracking
-    setNoCount((prev) => prev + 1);
+  // Function to toggle music
+  const toggleMusic = () => {
+    if (bgMusicRef.current) {
+      if (isMusicPlaying) {
+        bgMusicRef.current.pause();
+      } else {
+        bgMusicRef.current.play().catch(e => console.log("Playback failed:", e));
+      }
+      setIsMusicPlaying(!isMusicPlaying);
+    }
+  };
 
-    // Get random coordinates within the window
-    const x = Math.random() * (window.innerWidth - 100);
-    const y = Math.random() * (window.innerHeight - 50);
+  // Sound Effects
+  const playSwoosh = () => {
+    const audio = new Audio("https://www.soundjay.com/button/sounds/button-10.mp3"); // Simple swoosh/click
+    audio.volume = 0.5;
+    audio.play().catch(e => console.log(e));
+  };
+
+  const playSuccess = () => {
+    const audio = new Audio("https://www.soundjay.com/human/sounds/applause-01.mp3"); // Cheering
+    audio.volume = 0.6;
+    audio.play().catch(e => console.log(e));
+  };
+
+  const moveButton = () => {
+    playSwoosh(); // Play sound when moving
+    setNoCount((prev) => prev + 1);
+    setYesButtonSize((prev) => prev + 0.15); 
+
+    const maxWidth = window.innerWidth - 150;
+    const maxHeight = window.innerHeight - 100;
+
+    const randomX = Math.max(10, Math.random() * maxWidth);
+    const randomY = Math.max(10, Math.random() * maxHeight);
 
     setNoPosition({
-      top: `${y}px`,
-      left: `${x}px`,
-      position: "absolute" // Switch to absolute to make it jump anywhere
+      top: `${randomY}px`,
+      left: `${randomX}px`,
+      position: "fixed" 
     });
   };
 
   const handleYesClick = async () => {
     if (!user) return;
     
+    playSuccess(); // Play success sound
+
+    confetti({
+      particleCount: 150,
+      spread: 70,
+      origin: { y: 0.6 },
+      colors: ['#ff69b4', '#ff0000', '#ffffff']
+    });
+
     setYesClicked(true);
 
-    // Save "Yes" and the number of "No" attempts to database
     try {
       const userRef = doc(db, "users", user.uid);
       await updateDoc(userRef, {
@@ -63,52 +121,79 @@ export default function Valentine() {
 
   if (yesClicked) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-pink-100 text-center p-4">
-        <h1 className="text-4xl md:text-6xl font-bold text-red-600 mb-4">Yay! Thank you! ❤️</h1>
-        <p className="text-xl text-gray-700">I knew you would say yes! (Eventually 😉)</p>
-        <div className="mt-8 text-6xl">😘</div>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-pink-200 via-red-100 to-pink-200 text-center p-4">
+        <h1 className={`${greatVibes.className} text-6xl md:text-8xl text-red-600 mb-4 animate-bounce`}>
+          Yay! Thank you! ❤️
+        </h1>
+        <img 
+          src="https://media.giphy.com/media/26BRv0ThflsHCqDrG/giphy.gif" 
+          alt="Happy Bears"
+          className="rounded-xl shadow-2xl border-4 border-white w-64 md:w-96 my-6"
+        />
+        <p className="text-2xl text-pink-800 font-serif">
+          I knew you would say yes! (Eventually 😉)
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="relative flex flex-col items-center justify-center min-h-screen bg-pink-50 overflow-hidden">
-      {/* Image Area */}
-      <div className="mb-8">
-        <img 
-          src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbnJscWQ1YnNscGZ4bHExaXJ1bTRlZWF2dzc5bXJ6cWh0bGd0anA2ZCZlcD12MV9zdGlja2Vyc19zZWFyY2gmY3Q9cw/cLS1cfxvGOPVpf9g3y/giphy.gif" 
-          alt="Cute Valentine Bear"
-          className="w-48 h-48 object-contain"
-        />
+    <div className="relative flex flex-col items-center justify-center min-h-screen bg-gradient-to-t from-pink-200 via-pink-100 to-white overflow-hidden">
+      
+      {/* Music Toggle Button (Top Right) */}
+      <button 
+        onClick={toggleMusic}
+        className="absolute top-4 right-4 z-50 bg-white/50 backdrop-blur-sm p-3 rounded-full shadow-md hover:bg-white transition"
+      >
+        {isMusicPlaying ? "🔊" : "🔇"}
+      </button>
+
+      {/* Background Floating Hearts */}
+      <div className="absolute inset-0 pointer-events-none opacity-30">
+        <div className="absolute top-10 left-10 text-4xl animate-pulse">❤️</div>
+        <div className="absolute bottom-20 right-20 text-6xl animate-bounce">💖</div>
+        <div className="absolute top-1/2 left-5 text-3xl animate-ping">💕</div>
       </div>
 
-      <h1 className="text-3xl md:text-5xl font-bold text-pink-600 mb-12 text-center px-4">
-        Will you be my Valentine? 🌹
-      </h1>
+      <div className="z-10 text-center px-4">
+        <div className="mb-6 flex justify-center">
+          <img 
+            src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbnJscWQ1YnNscGZ4bHExaXJ1bTRlZWF2dzc5bXJ6cWh0bGd0anA2ZCZlcD12MV9zdGlja2Vyc19zZWFyY2gmY3Q9cw/cLS1cfxvGOPVpf9g3y/giphy.gif" 
+            alt="Cute Valentine Bear"
+            className="w-56 h-56 object-contain drop-shadow-xl"
+          />
+        </div>
 
-      <div className="flex gap-8 items-center justify-center">
-        {/* YES Button - Stable */}
-        <button
-          onClick={handleYesClick}
-          className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-full text-xl shadow-lg transform transition hover:scale-110"
-        >
-          Yes
-        </button>
+        <h1 className={`${greatVibes.className} text-5xl md:text-7xl text-red-500 mb-12 drop-shadow-sm`}>
+          Will you be my Valentine? 🌹
+        </h1>
 
-        {/* NO Button - Runs away */}
-        <button
-          onMouseEnter={moveButton} // Moves on desktop hover
-          onClick={moveButton}      // Moves on mobile tap
-          style={{
-            position: noPosition.position as any,
-            top: noPosition.top,
-            left: noPosition.left,
-            transition: "all 0.2s ease" // Smooth animation
-          }}
-          className="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-8 rounded-full text-xl shadow-lg"
-        >
-          No
-        </button>
+        <div className="flex flex-wrap gap-6 items-center justify-center">
+          {/* YES Button */}
+          <button
+            onClick={handleYesClick}
+            style={{ transform: `scale(${yesButtonSize})` }}
+            className="bg-gradient-to-r from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-white font-bold py-3 px-10 rounded-full text-xl shadow-xl transition-all duration-200 ease-in-out z-20"
+          >
+            Yes 💖
+          </button>
+
+          {/* NO Button */}
+          <button
+            onMouseEnter={moveButton}
+            onClick={moveButton}
+            style={{
+              position: noPosition.position as any,
+              top: noPosition.top,
+              left: noPosition.left,
+              transition: "top 0.2s ease, left 0.2s ease",
+              zIndex: 50 
+            }}
+            className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold py-3 px-8 rounded-full text-xl shadow-md"
+          >
+            No 😢
+          </button>
+        </div>
       </div>
     </div>
   );
